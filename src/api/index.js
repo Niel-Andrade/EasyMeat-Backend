@@ -7,6 +7,7 @@ const adminRota = require('./admin');
 
 const rota = express.Router();
 
+//Uma rota de checagem de resposta da aplicação
 rota.get('/health', (_req, res) => {
   return res.status(200).json({ status: 'ok' });
 });

@@ -4,24 +4,7 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const env = require('../config/env');
 const { criarErro, serializarUsuario } = require('./utils');
-
-// 3.2 — Validação de CPF no back-end (formato + dígitos verificadores)
-function validarCpfNumerico(cpf) {
-  if (!cpf || typeof cpf !== 'string') return false;
-  const digits = cpf.replace(/\D/g, '');
-  if (digits.length !== 11) return false;
-  if (/^(\d)\1+$/.test(digits)) return false;
-  const calc = (slice) => {
-    let soma = 0;
-    for (let i = 0; i < slice.length; i++) {
-      soma += Number(slice[i]) * (slice.length + 1 - i);
-    }
-    const resto = (soma * 10) % 11;
-    return resto === 10 ? 0 : resto;
-  };
-  return calc(digits.slice(0, 9)) === Number(digits[9]) &&
-         calc(digits.slice(0, 10)) === Number(digits[10]);
-}
+const validarCpf = require('../validation/cpf');
 
 class AuthServico {
   constructor(UsuarioModel, RecuperacaoSenhaModel) {
@@ -39,6 +22,7 @@ class AuthServico {
       env.jwt_secret,
       {
         expiresIn: env.jwt_tempo,
+        algorithm: 'HS256',
       }
     );
   }
@@ -54,19 +38,15 @@ class AuthServico {
     // 3.2 — Validação obrigatória de CPF para VENDEDOR
     let cpfNormalizado = null;
     if (dados.tipoUsuario === 'VENDEDOR') {
-      if (!dados.cpf || !validarCpfNumerico(dados.cpf)) {
-        throw criarErro('CPF inválido ou não informado. Vendedores precisam informar um CPF válido.', 400);
-      }
-      cpfNormalizado = String(dados.cpf).replace(/\D/g, '');
-
-      // Garante unicidade do CPF entre vendedores
-      const cpfExistente = await this.usuario.findOne({
-        where: { cpf: cpfNormalizado },
-      });
-      if (cpfExistente) {
-        throw criarErro('Já existe uma conta cadastrada com este CPF.', 409);
-      }
+      if (!validarCpf(dados.cpf)) {
+        throw criarErro(
+          'CPF inválido ou não informado. Vendedores precisam informar um CPF válido.',
+          400
+        );
     }
+
+    cpfNormalizado = dados.cpf.replace(/\D/g, '');
+  }
 
     const senhaHash = bcrypt.hashSync(dados.senha, env.bcrypt_salt);
 

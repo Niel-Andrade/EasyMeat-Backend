@@ -30,7 +30,7 @@ rota.put(
   validarRequisicao,
   async (req, res) => {
     try {
-      const resposta = await adminServico.alterarStatusUsuario(req.params.id, req.body.status);
+      const resposta = await adminServico.alterarStatusUsuario(req.params.id,req.body.status,req.usuario.id);
       return res.status(200).json(resposta);
     } catch (erro) {
       return tratarErro(res, erro);

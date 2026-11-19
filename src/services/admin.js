@@ -15,8 +15,16 @@ class AdminServico {
     return usuarios.map((item) => serializarUsuario(item));
   }
 
-  async alterarStatusUsuario(id, status) {
+  async alterarStatusUsuario(id, status, adminId) {
+    if (id === adminId && status === 'BLOQUEADO') {
+      throw criarErro(
+        'Você não pode bloquear sua própria conta.',
+        403
+      );
+    }
+
     const usuario = await this.usuario.findByPk(id);
+
     if (!usuario) {
       throw criarErro('Usuário não encontrado.', 404);
     }

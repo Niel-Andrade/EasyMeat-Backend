@@ -4,6 +4,7 @@ const env = require('../config/env');
 const { usuario, recuperacaoSenha } = require('../models');
 const AuthServico = require('../services/auth');
 const { validarRequisicao, tratarErro } = require('./helpers');
+const validarCpf = require('../validation/cpf');
 
 const rota = express.Router();
 const authServico = new AuthServico(usuario, recuperacaoSenha);
@@ -12,34 +13,15 @@ const cookieOptions = {
   httpOnly: true,
   sameSite: 'lax',
   secure: env.node_env === 'production',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 7 * 24  * 60 * 60 * 1000,
 };
 
 function validarCpfRegra(value, { req }) {
-  if (req.body.tipoUsuario !== 'VENDEDOR') return true;
-  // Vendedor: CPF é obrigatório e deve estar em formato válido (11 dígitos)
-  const digits = String(value || '').replace(/\D/g, '');
-  if (!digits || digits.length !== 11) {
-    throw new Error('CPF é obrigatório para vendedores.');
+  if (req.body.tipoUsuario !== 'VENDEDOR') {
+    return true;
   }
-  if (/^(\d)\1+$/.test(digits)) {
-    throw new Error('CPF inválido.');
-  }
-  const calc = (slice) => {
-    let soma = 0;
-    for (let i = 0; i < slice.length; i++) {
-      soma += Number(slice[i]) * (slice.length + 1 - i);
-    }
-    const resto = (soma * 10) % 11;
-    return resto === 10 ? 0 : resto;
-  };
-  if (calc(digits.slice(0, 9)) !== Number(digits[9])) {
-    throw new Error('CPF inválido.');
-  }
-  if (calc(digits.slice(0, 10)) !== Number(digits[10])) {
-    throw new Error('CPF inválido.');
-  }
-  return true;
+
+  return validarCpf(value);
 }
 
 rota.post(
@@ -92,8 +74,14 @@ rota.post(
 );
 
 rota.post('/logout', async (_req, res) => {
-  res.clearCookie(env.jwt_cookie_nome, cookieOptions);
-  return res.status(200).json({ success: true, message: 'Logout realizado com sucesso.' });
+  const { maxAge, ...opcoesLimpeza } = cookieOptions;
+
+  res.clearCookie(env.jwt_cookie_nome, opcoesLimpeza);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Logout realizado com sucesso.',
+  });
 });
 
 rota.get('/me', async (req, res) => {

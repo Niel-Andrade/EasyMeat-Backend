@@ -8,8 +8,11 @@ const toBoolean = (valor, padrao = false) => {
 };
 
 const toNumber = (valor, padrao) => {
+  if (valor === undefined || valor === '') return padrao;
+
   const numero = Number(valor);
-  return Number.isNaN(numero) ? padrao : numero;
+
+  return Number.isFinite(numero) ? numero : padrao;
 };
 
 const env = {
@@ -29,7 +32,7 @@ const env = {
   banco: {
     host: process.env.DB_HOST || 'localhost',
     port: toNumber(process.env.DB_PORT, 5432),
-    database: process.env.DB_NAME || 'easy_meat',
+    database: process.env.DB_NAME || 'easyMeatBd',
     username: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     dialect: process.env.DB_DIALECT || 'postgres',
@@ -47,6 +50,15 @@ const env = {
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
     api_key: process.env.CLOUDINARY_API_KEY || '',
     api_secret: process.env.CLOUDINARY_API_SECRET || '',
+  },
+  bancoTeste: {
+    host: process.env.DB_TEST_HOST || process.env.DB_HOST || 'localhost',
+    port: toNumber(process.env.DB_TEST_PORT || process.env.DB_PORT, 5432),
+    database: process.env.DB_TEST_NAME || '',
+    username: process.env.DB_TEST_USER || process.env.DB_USER || 'postgres',
+    password: process.env.DB_TEST_PASSWORD || process.env.DB_PASSWORD || '',
+    dialect: process.env.DB_DIALECT || 'postgres',
+    logging: false,
   },
 };
 
